@@ -1,6 +1,7 @@
 from pathlib import Path
-from typing import Callable, Iterator, List, Optional, Type, Union
+from typing import TYPE_CHECKING, Callable, Iterator, List, Optional, Type, Union
 
+from ape.exceptions import AccountsError, AliasAlreadyInUseError, SignatureError
 from ape.types import (
     AddressType,
     ContractType,
@@ -10,11 +11,13 @@ from ape.types import (
 )
 from ape.utils import cached_property
 
-from ..exceptions import AccountsError, AliasAlreadyInUseError, SignatureError
 from .address import AddressAPI
 from .base import abstractdataclass, abstractmethod
 from .contracts import ContractContainer, ContractInstance
-from .providers import ReceiptAPI, TransactionAPI
+from .providers import ReceiptAPI, TransactionAPI, TransactionType
+
+if TYPE_CHECKING:
+    from ape.managers.config import ConfigManager
 
 
 # NOTE: AddressAPI is a dataclass already
@@ -41,11 +44,27 @@ class AccountAPI(AddressAPI):
 
     @abstractmethod
     def sign_message(self, msg: SignableMessage) -> Optional[MessageSignature]:
-        ...
+        """
+        Signs the given message.
+
+        Args:
+          msg (:class:`~eth_account.messages.SignableMessage`): The message to sign.
+
+        Returns:
+          :class:`~ape.types.signatures.MessageSignature` (optional): The signed message.
+        """
 
     @abstractmethod
     def sign_transaction(self, txn: TransactionAPI) -> Optional[TransactionSignature]:
-        ...
+        """
+        Signs the given transaction.
+
+        Args:
+          txn (:class:`~ape.api.providers.TransactionAPI`): The transaction to sign.
+
+        Returns:
+          :class:`~ape.types.signatures.TransactionSignature` (optional): The signed transaction.
+        """
 
     def call(self, txn: TransactionAPI, send_everything: bool = False) -> ReceiptAPI:
         # NOTE: Use "expected value" for Chain ID, so if it doesn't match actual, we raise
@@ -57,22 +76,28 @@ class AccountAPI(AddressAPI):
         elif txn.nonce < self.nonce:
             raise AccountsError("Invalid nonce, will not publish.")
 
-        # TODO: Add `GasEstimationAPI`
-        if txn.gas_price is None:
-            txn.gas_price = self.provider.gas_price
-        # else: assume user specified a correct price, or will take too much time to confirm
+        txn_type = TransactionType(txn.type)
+        if txn_type == TransactionType.STATIC and txn.gas_price is None:  # type: ignore
+            txn.gas_price = self.provider.gas_price  # type: ignore
+        elif txn_type == TransactionType.DYNAMIC:
+            if txn.max_priority_fee is None:  # type: ignore
+                txn.max_priority_fee = self.provider.priority_fee  # type: ignore
 
-        # NOTE: Allow overriding gas limit
+            if txn.max_fee is None:
+                txn.max_fee = self.provider.base_fee + txn.max_priority_fee
+            # else: Assume user specified the correct amount or txn will fail and waste gas
+
         if txn.gas_limit is None:
             txn.gas_limit = self.provider.estimate_gas_cost(txn)
-        # else: assume user specified the correct amount or txn will fail and waste gas
+        # else: Assume user specified the correct amount or txn will fail and waste gas
 
         if send_everything:
-            txn.value = self.balance - txn.gas_limit * txn.gas_price
+            txn.value = self.balance - txn.max_fee
 
         if txn.total_transfer_value > self.balance:
             raise AccountsError(
-                "Transfer value meets or exceeds account balance. "
+                "Transfer value meets or exceeds account balance.\n"
+                "Are you using the correct provider/account combination?\n"
                 f"(transfer_value={txn.total_transfer_value}, balance={self.balance})."
             )
 
@@ -134,6 +159,7 @@ class AccountAPI(AddressAPI):
 class AccountContainerAPI:
     data_folder: Path
     account_type: Type[AccountAPI]
+    config_manager: "ConfigManager"
 
     @property
     @abstractmethod
@@ -198,3 +224,19 @@ class AccountContainerAPI:
     def _verify_unused_alias(self, account):
         if account.alias and account.alias in self.aliases:
             raise AliasAlreadyInUseError(account.alias)
+
+
+class TestAccountContainerAPI(AccountContainerAPI):
+    """
+    Test account containers for ``ape test`` should implement
+    this API instead of ``AccountContainerAPI`` directly. This
+    is how they show up in the ``accounts`` test fixture.
+    """
+
+
+class TestAccountAPI(AccountAPI):
+    """
+    Test accounts for ``ape test`` should implement this API
+    instead of ``AccountAPI`` directly. This is how they show
+    up in the ``accounts`` test fixture.
+    """

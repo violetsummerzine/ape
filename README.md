@@ -2,6 +2,8 @@
 
 Ape is a framework for Web3 Python applications and smart contracts, with advanced functionality for testing, deployment, and on-chain interactions.
 
+See [website](https://apeworx.io/) and [documentation](https://apeworx.io/ape/).
+
 ## Dependencies
 
 * [python3](https://www.python.org/downloads) version 3.7 or greater, python3-dev
@@ -93,7 +95,7 @@ a = accounts.load("alias") # or load by alias
 from ape import project
 c = a.deploy(project.MyContract, ...)
 c.viewThis()  # Make Web3 calls
-c.doThat({"from": a})  # Make Web3 transactions
+c.doThat(sender=a)  # Make Web3 transactions
 assert c.MyEvent[-1].caller == a  # Search through Web3 events
 ```
 

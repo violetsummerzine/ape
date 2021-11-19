@@ -67,6 +67,8 @@ class TransactionError(ContractError):
     Raised when issues occur related to transactions.
     """
 
+    DEFAULT_MESSAGE = "Tranaction failed."
+
     def __init__(
         self,
         base_err: Optional[Exception] = None,
@@ -75,7 +77,7 @@ class TransactionError(ContractError):
     ):
         self.base_err = base_err
         if not message:
-            message = str(base_err) if base_err else "Tranaction Failed"
+            message = str(base_err) if base_err else self.DEFAULT_MESSAGE
 
         self.message = message
         self.code = code
@@ -86,11 +88,17 @@ class TransactionError(ContractError):
 
 class VirtualMachineError(TransactionError):
     """
-    Raised when there is either an internal fault in a virtual machine
-    or a contract-defined revert, such as from an assert/require statement.
+    Raised when a transaction error occurs in a virtual machine.
     """
 
-    def __init__(self, revert_message: str):
+
+class ContractLogicError(VirtualMachineError):
+    """
+    Raised when there is a contract-defined revert,
+    such as from an assert/require statement.
+    """
+
+    def __init__(self, revert_message: Optional[str] = None):
         super().__init__(message=revert_message)
 
     @property
