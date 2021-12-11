@@ -27,7 +27,7 @@ class TransactionType(Enum):
 @abstractdataclass
 class TransactionAPI:
     """
-    An API class representing a Transaction API.
+    An API class representing a Transaction.
     """
 
     chain_id: int = 0
@@ -60,13 +60,13 @@ class TransactionAPI:
         return 0
 
     @max_fee.setter
-    def max_fee(self, value):
+    def max_fee(self, value: int):
         """
         Set the max fee.
-        Must be overriden or else raises `NotImplementedError`
+        Must be overriden or else raises `NotImplementedError`.
 
         Args:
-            value (`int`): The number of the fee
+            value (int): The number of the fee
         """
         raise NotImplementedError("Max fee is not settable by default.")
 
@@ -92,10 +92,10 @@ class TransactionAPI:
 
     def as_dict(self) -> dict:
         """
-        Creates a dict with the raw input.
+        Create a ``dict`` representation of the transaction.
 
         Returns:
-            dict (`dict`)
+            dict
         """
         return as_dict(self)
 
@@ -144,9 +144,10 @@ class ConfirmationsProgressBar:
     @property
     def confs(self) -> int:
         """
-        NOT SURE WHAT THIS DOES
+        The number of confirmations that have occurred.
+
         Returns:
-            int
+            int: The total number of confirmations that have occurred.
         """
         return self._confs
 
@@ -209,7 +210,7 @@ class ReceiptAPI:
         Converts a dictionary to :class:`~ape.api.ReceiptAPI`.
 
         Args:
-            data (`[dict]`): :class:`~ape.api.ReceiptAPI`.
+            data (dict): The dict to convert.
 
         Returns:
             :class:`~ape.api.ReceiptAPI`
@@ -220,7 +221,7 @@ class ReceiptAPI:
         Waits for a transaction to be considered confirmed.
 
         Returns:
-            :class:`~ape.api.ReceiptAPI`
+            :class:`~ape.api.ReceiptAPI`: The receipt that is now confirmed.
         """
         # Wait for nonce from provider to increment.
         sender_nonce = self.provider.get_nonce(self.sender)
@@ -252,7 +253,7 @@ class ReceiptAPI:
 @abstractdataclass
 class BlockGasAPI:
     """
-    A base class for BlockGasAPI.
+    An abstract class for representing gas data for a block.
     """
 
     gas_limit: int
@@ -263,10 +264,10 @@ class BlockGasAPI:
     @abstractmethod
     def decode(cls, data: Dict) -> "BlockGasAPI":
         """
-        Converts a dictionary to :class:`~ape.api.BlockGasAPI`.
+        Convert a dictionary to a :class:`~ape.api.BlockGasAPI`.
 
         Args:
-            data (`[dict]`): :class:`~ape.api.BlockGasAPI`.
+            data (dict): The dictionary to convert.
 
         Returns:
             :class:`~ape.api.BlockGasAPI`
@@ -276,7 +277,7 @@ class BlockGasAPI:
 @abstractdataclass
 class BlockConsensusAPI:
     """
-    A base class for BlockConsensusAPI.
+    An abstract class representing the consensus data for a block.
     """
 
     difficulty: Optional[int] = None
@@ -286,10 +287,10 @@ class BlockConsensusAPI:
     @abstractmethod
     def decode(cls, data: Dict) -> "BlockConsensusAPI":
         """
-        Converts a dictionary to :class:`~ape.api.BlockConsensusAPI`.
+        Convert a dictionary to a :class:`~ape.api.BlockConsensusAPI`.
 
         Args:
-            data (`[dict]`): :class:`~ape.api.BlockConsensusAPI`.
+            data (dict): The dictionary to convert.
 
         Returns:
             :class:`~ape.api.BlockConsensusAPI`
@@ -299,7 +300,7 @@ class BlockConsensusAPI:
 @abstractdataclass
 class BlockAPI:
     """
-    A base class for BlockAPI.
+    An abstract class representing a block.
     """
 
     gas_data: BlockGasAPI
@@ -317,7 +318,7 @@ class BlockAPI:
         Converts a dictionary to :class:`~ape.api.BlockAPI`.
 
         Args:
-            data (`[dict]`): :class:`~ape.api.BlockAPI`.
+            data (dict): Dictionary to convert.
 
         Returns:
             :class:`~ape.api.BlockAPI`
@@ -356,7 +357,7 @@ class ProviderAPI:
         May require a reconnect.
 
         Agrs:
-            new_settings ([`dict`]): Value of new provider
+            new_settings (dict): Value of new provider
         """
 
     @property
@@ -366,7 +367,8 @@ class ProviderAPI:
         Gives value of blockchain id.
 
         Returns:
-            int: value of blockchain id."""
+            int: value of blockchain id.
+        """
 
     @abstractmethod
     def get_balance(self, address: str) -> int:
@@ -374,7 +376,7 @@ class ProviderAPI:
         Gives values of address balance.
 
         Args:
-            address (`str`): Address string.
+            address (str): Address string.
 
         Returns:
             int: value of balance at the address.
@@ -384,13 +386,12 @@ class ProviderAPI:
     def get_code(self, address: str) -> bytes:
         """
         Get the bytes of the contract.
-        Must override address or else raise `error`.
 
         Args:
-            address (`str`): value of address (Required)
+            address (str): value of address (Required)
 
         Returns:
-        bytes (`int`): HexBytes of contract.
+        bytes (int): HexBytes of contract.
         """
 
     @abstractmethod
@@ -399,7 +400,7 @@ class ProviderAPI:
         Gets the number of transactions.
 
         Agrs:
-            address (`str`): string of address.
+            address (str): string of address.
 
         Returns:
             int: value of nonce.
@@ -408,11 +409,11 @@ class ProviderAPI:
     @abstractmethod
     def estimate_gas_cost(self, txn: TransactionAPI) -> int:
         """
-        Gets the calculated gas cost.
-        See :class:`~ape.api.accounts.AccountAPI.call` to see calculation.
+        Use for setting the default gas limit on a transaction.
 
         Args:
-            txn (:class:`~ape.api.providers.TransactionAPI`) : transaction.
+            txn (:class:`~ape.api.providers.TransactionAPI`) :
+            The transaction to estimate the gas for.
 
         Returns:
             int: value of estimated gas cost.
@@ -431,7 +432,7 @@ class ProviderAPI:
     @property
     def priority_fee(self) -> int:
         """
-        Value of miner tip to incentivize them
+         A miner tip to incentivize them
         to include your transaction in a block.
 
         Returns:
@@ -442,7 +443,7 @@ class ProviderAPI:
     @property
     def base_fee(self) -> int:
         """
-        Value of the fee determinted by the network.
+        Value of the fee determined by the network.
         Must overrride address or else it will raise `NotImplementedError`.
 
         Returns:
@@ -460,7 +461,7 @@ class ProviderAPI:
             block_id (`int`): Value of Block Id.
 
         Returns:
-            BlockAPI (:class:~`ape.types.BlockID`)
+            :class:~`ape.types.BlockID`: The block for the given ID.
         """
 
     @abstractmethod
@@ -470,7 +471,7 @@ class ProviderAPI:
         transaction on the block chain.
 
         Returns:
-            bytes (`str`): HexBytes
+            str: The result of the transaction call.
         """
 
     @abstractmethod
@@ -482,8 +483,8 @@ class ProviderAPI:
             txn_hash (str): The hash of the transaction to retrieve.
 
         Returns:
-            ReceiptAPI (:class:~`api.providers.ReceiptAPI`):
-            The receipt of the transaction with the given hash.
+            class:~`api.providers.ReceiptAPI`:
+                The receipt of the transaction with the given hash.
         """
 
     @abstractmethod
