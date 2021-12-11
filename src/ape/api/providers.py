@@ -105,9 +105,6 @@ class TransactionAPI:
         return f"<{self.__class__.__name__} {params}>"
 
     def __str__(self) -> str:
-        """
-        Convert `dict` to `HexBytes`
-        """
         data = as_dict(self)  # NOTE: `as_dict` could be overridden
         if len(data["data"]) > 9:
             data["data"] = (
